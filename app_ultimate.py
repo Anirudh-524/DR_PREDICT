@@ -62,14 +62,21 @@ CLASS_NAMES = ['Mild', 'Moderate', 'No_DR', 'Proliferate_DR', 'Severe']
 def load_model():
     global model
     try:
-        print("Loading model...")
+        # Get the directory where app_ultimate.py is located
+        base_path = os.path.dirname(os.path.abspath(__file__))
+        model_path = os.path.join(base_path, 'best_model.h5')
+        
+        print(f"Loading model from: {model_path}")
+        
+        if not os.path.exists(model_path):
+            print(f"✗ Error: File 'best_model.h5' not found at {model_path}")
+            return
+
         model = tf.keras.models.load_model(
-            'best_model.h5',
+            model_path,
             custom_objects={'Patches': Patches, 'PatchEncoder': PatchEncoder}
         )
         print("✓ Model loaded!")
-        print(f"  Input: {model.input_shape}")
-        print(f"  Output: {model.output_shape}")
     except Exception as e:
         print(f"✗ Error: {e}")
 
