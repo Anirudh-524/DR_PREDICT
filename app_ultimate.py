@@ -80,6 +80,11 @@ def load_model():
     except Exception as e:
         print(f"✗ Error: {e}")
 
+# =====================================================================
+# FIX 1: Call load_model() globally so Gunicorn loads it on startup
+# =====================================================================
+load_model()
+
 def preprocess_image(image_path):
     img = tf.keras.preprocessing.image.load_img(image_path, target_size=(224, 224))
     img_array = tf.keras.preprocessing.image.img_to_array(img)
@@ -341,15 +346,17 @@ def batch_predict():
     
     return jsonify({'results': results})
 
+# =====================================================================
+# FIX 2: Allow Railway to assign the dynamic port
+# =====================================================================
 if __name__ == '__main__':
     print("\n" + "="*60)
     print("🔬 Diabetic Retinopathy Detection System")
     print("="*60)
-    load_model()
-    print("\n🚀 Starting server...")
-    print("📍 http://localhost:5000")
-    print("   OR http://10.243.27.217:5000")
+    print("\n🚀 Starting local development server...")
     print("="*60 + "\n")
-    print("💡 TIP: Open in incognito mode (Ctrl+Shift+N) to avoid cache issues")
-    print("="*60 + "\n")
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    
+    # Railway passes a dynamic PORT environment variable.
+    # If it's not found (like on your laptop), it defaults to 5000.
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
