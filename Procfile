@@ -1,0 +1,1 @@
+web: gunicorn app_ultimate:app --bind 0.0.0.0:$PORT --timeout 120

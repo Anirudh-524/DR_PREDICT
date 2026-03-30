@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VisNet - Diabetic Retinopathy Detection</title>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary: #7c3aed;
+            --success: #059669;
+            --warning: #d97706;
+            --danger: #dc2626;
+            --bg-main: #0f172a;
+            --bg-card: #1e293b;
+            --bg-elevated: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --accent-cyan: #06b6d4;
+            --accent-pink: #ec4899;
+        }
+
+        body {
+            font-family: 'Instrument Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, var(--bg-main) 0%, #0c1425 100%);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animated background effect */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 50% 50%, rgba(37, 99, 235, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 20%, rgba(124, 58, 237, 0.1) 0%, transparent 50%);
+            animation: rotate 30s linear infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding: 2rem;
+            background: linear-gradient(to bottom, rgba(30, 41, 59, 0.6), transparent);
+            backdrop-filter: blur(10px);
+            border-radius: 1rem;
+            border: 1px solid var(--border);
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 50%, var(--accent-cyan) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .model-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 2rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-top: 0.5rem;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            margin-top: 1rem;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: 1rem;
+            border: 1px solid var(--border);
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--primary);
+            box-shadow: 0 10px 30px rgba(37, 99, 235, 0.2);
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Main Tabs */
+        .main-tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .main-tab {
+            padding: 1rem 2rem;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .main-tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .main-tab:hover {
+            color: var(--text-primary);
+        }
+
+        .main-tab-content {
+            display: none;
+        }
+
+        .main-tab-content.active {
+            display: block;
+        }
+
+        /* Sub Tabs */
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .tab.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Upload Area */
+        .upload-area {
+            background: var(--bg-card);
+            border: 2px dashed var(--border);
+            border-radius: 1rem;
+            padding: 3rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 2rem;
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary);
+            background: var(--bg-elevated);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .upload-text {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-hint {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        #imageInput {
+            display: none;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            display: none;
+        }
+
+        .spinner {
+            border: 4px solid var(--border);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Results Section - RESTORED FROM ORIGINAL */
+        .results-container {
+            display: none;
+        }
+
+        .prediction-box {
+            background: linear-gradient(135deg, var(--bg-card), var(--bg-elevated));
+            padding: 1.5rem;
+            border-radius: 1rem;
+            border: 1px solid var(--border);
+            margin-bottom: 2rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .prediction-info {
+            text-align: left;
+        }
+
+        .prediction-label {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .prediction-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .confidence-bar {
+            background: var(--bg-main);
+            height: 12px;
+            border-radius: 1rem;
+            overflow: hidden;
+            margin-top: 0.5rem;
+            width: 100%;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--success), var(--accent-cyan));
+            transition: width 0.5s ease;
+        }
+
+        .confidence-section {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .result-card {
+            background: var(--bg-card);
+            border-radius: 1rem;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .result-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(37, 99, 235, 0.2);
+        }
+
+        .card-header {
+            padding: 1rem 1.5rem;
+            background: var(--bg-elevated);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-title {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .image-container {
+            padding: 1rem;
+            background: var(--bg-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 400px;
+        }
+
+        .image-container img {
+            max-width: 100%;
+            width: 100%;
+            height: auto;
+            border-radius: 0.5rem;
+            object-fit: contain;
+        }
+
+        .predictions-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .predictions-table thead {
+            background: var(--bg-elevated);
+        }
+
+        .predictions-table th,
+        .predictions-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .predictions-table th {
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.05em;
+        }
+
+        .predictions-table td {
+            color: var(--text-primary);
+        }
+
+        .predictions-table tr:hover {
+            background: var(--bg-elevated);
+        }
+
+        /* Model Info Sections */
+        .info-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .info-section h2 {
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .info-section p {
+            color: var(--text-secondary);
+            line-height: 1.8;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+
+        .metric-box {
+            background: var(--bg-elevated);
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .metric-label {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            margin-top: 0.5rem;
+        }
+
+        .class-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .class-card {
+            background: var(--bg-elevated);
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            border: 1px solid var(--border);
+            transition: all 0.3s;
+        }
+
+        .class-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-3px);
+        }
+
+        .class-name {
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .class-description {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .visualization-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .viz-card {
+            background: var(--bg-elevated);
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            border: 1px solid var(--border);
+        }
+
+        .viz-card h3 {
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+        }
+
+        .viz-image {
+            width: 100%;
+            height: auto;
+            border-radius: 0.5rem;
+        }
+
+        /* Batch Processing Styles */
+        .batch-results {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .batch-item {
+            background: var(--bg-card);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+        }
+
+        .batch-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(37, 99, 235, 0.2);
+        }
+
+        .batch-item img {
+            width: 100%;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .batch-item h3 {
+            color: var(--text-primary);
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .error-message {
+            background: rgba(220, 38, 38, 0.1);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+            padding: 1rem;
+            border-radius: 0.75rem;
+            margin: 1rem 0;
+        }
+
+        .badge-warning {
+            background: rgba(217, 119, 6, 0.2);
+            color: var(--warning);
+            border: 1px solid var(--warning);
+        }
+
+        .badge-danger {
+            background: rgba(220, 38, 38, 0.2);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+        }
+
+        .loading-text {
+            text-align: center;
+            color: var(--text-secondary);
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>EViT-DR</h1>
+            <div class="model-badge">Vision Transformer + EfficientNet</div>
+            <p class="subtitle">Advanced Diabetic Retinopathy Detection System</p>
+        </header>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Accuracy</div>
+                <div class="stat-value">97.5%</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Model Type</div>
+                <div class="stat-value">Hybrid</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Classes</div>
+                <div class="stat-value">5</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Status</div>
+                <div class="stat-value">Active</div>
+            </div>
+        </div>
+
+        <!-- Main Tabs -->
+        <div class="main-tabs">
+            <button class="main-tab active" onclick="switchMainTab('detection')">Detection</button>
+            <button class="main-tab" onclick="switchMainTab('model-info')">Model Information</button>
+        </div>
+
+        <!-- Detection Tab Content -->
+        <div id="detection-content" class="main-tab-content active">
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('single')">Single Image</div>
+                <div class="tab" onclick="switchTab('batch')">Batch Processing</div>
+            </div>
+
+            <div id="single-content" class="tab-content active">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📷</div>
+                    <div class="upload-text">Click to upload retinal image</div>
+                    <div class="upload-hint">Supports JPG, PNG formats</div>
+                    <input type="file" id="imageInput" accept="image/*">
+                </div>
+
+                <div id="loadingIndicator" class="loading">
+                    <div class="spinner"></div>
+                    <p>Analyzing retinal image...</p>
+                </div>
+
+                <!-- RESTORED RESULTS SECTION FROM ORIGINAL -->
+                <div id="results" class="results-container">
+                    <div class="prediction-box">
+                        <div class="prediction-info">
+                            <div class="prediction-label">Predicted Diagnosis</div>
+                            <div class="prediction-value" id="predictedClass"></div>
+                        </div>
+                        <div class="confidence-section">
+                            <div class="prediction-label">Confidence</div>
+                            <div class="prediction-value" id="confidence" style="color: var(--accent-cyan); font-size: 1.75rem;"></div>
+                            <div class="confidence-bar">
+                                <div class="confidence-fill" id="confidenceBar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="result-grid">
+                        <div class="result-card">
+                            <div class="card-header">
+                                <div class="card-title">Original Image</div>
+                            </div>
+                            <div class="image-container">
+                                <img id="originalImage" alt="Original">
+                            </div>
+                        </div>
+
+                        <div class="result-card">
+                            <div class="card-header">
+                                <div class="card-title">Grad-CAM Activation</div>
+                                <span class="badge badge-success">Feature Map</span>
+                            </div>
+                            <div class="image-container">
+                                <img id="gradcamImage" alt="Grad-CAM">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="result-card">
+                        <div class="card-header">
+                            <div class="card-title">Confidence Distribution</div>
+                        </div>
+                        <div class="image-container" style="border: none;">
+                            <img id="confidenceChart" alt="Confidence Chart" style="background: white; padding: 1rem; border-radius: 0.5rem;">
+                        </div>
+                    </div>
+
+                    <div class="result-card">
+                        <div class="card-header">
+                            <div class="card-title">Detailed Predictions</div>
+                        </div>
+                        <table class="predictions-table">
+                            <thead>
+                                <tr>
+                                    <th>Class</th>
+                                    <th>Confidence</th>
+                                    <th>Percentage</th>
+                                </tr>
+                            </thead>
+                            <tbody id="predictionsTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="batch-content" class="tab-content">
+                <div class="upload-area" onclick="document.getElementById('batchFileInput').click()">
+                    <div class="upload-icon">📁</div>
+                    <div class="upload-text">Upload multiple images for batch processing</div>
+                    <div class="upload-hint">Select multiple JPG, PNG files</div>
+                    <input type="file" id="batchFileInput" accept="image/*" multiple style="display: none;">
+                </div>
+
+                <div id="batchLoading" class="loading">
+                    <div class="spinner"></div>
+                    <div class="loading-text">Processing batch images...</div>
+                </div>
+
+                <div id="batchResults" class="batch-results"></div>
+            </div>
+        </div>
+
+        <!-- Model Information Tab Content -->
+        <div id="model-info-content" class="main-tab-content">
+            <!-- Model Overview -->
+            <div class="info-section">
+                <h2>📊 Model Overview</h2>
+                <p><strong>VisNet</strong> is a hybrid deep learning architecture combining Vision Transformers (ViT) with EfficientNet for robust diabetic retinopathy classification. The model achieves 97.5% accuracy on the validation dataset.</p>
+                <div class="metrics-grid" style="margin-top: 1.5rem;">
+                    <div class="metric-box">
+                        <div class="metric-value">97.5%</div>
+                        <div class="metric-label">Accuracy</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-value">0.97</div>
+                        <div class="metric-label">Precision</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-value">0.97</div>
+                        <div class="metric-label">Recall</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-value">0.97</div>
+                        <div class="metric-label">F1-Score</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Classification Classes -->
+            <div class="info-section">
+                <h2>🏥 Classification Classes</h2>
+                <div class="class-grid">
+                    <div class="class-card">
+                        <div class="class-name">No DR</div>
+                        <div class="class-description">No signs of diabetic retinopathy. Retina appears healthy with normal blood vessels.</div>
+                    </div>
+                    <div class="class-card">
+                        <div class="class-name">Mild</div>
+                        <div class="class-description">Mild nonproliferative diabetic retinopathy. Microaneurysms present in the retina.</div>
+                    </div>
+                    <div class="class-card">
+                        <div class="class-name">Moderate</div>
+                        <div class="class-description">Moderate nonproliferative diabetic retinopathy. More extensive vascular abnormalities.</div>
+                    </div>
+                    <div class="class-card">
+                        <div class="class-name">Severe</div>
+                        <div class="class-description">Severe nonproliferative diabetic retinopathy. Extensive hemorrhages and venous abnormalities.</div>
+                    </div>
+                    <div class="class-card">
+                        <div class="class-name">Proliferative DR</div>
+                        <div class="class-description">Proliferative diabetic retinopathy. New blood vessel growth and potential vision-threatening complications.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Visualizations -->
+            <div class="info-section">
+                <h2>📈 Performance Metrics</h2>
+                <div class="visualization-grid">
+                    <div class="viz-card">
+                        <h3>Confusion Matrix</h3>
+                        <img src="/static/images/confusion_matrix.png" class="viz-image" alt="Confusion Matrix" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'400\' height=\'400\'%3E%3Crect fill=\'%231e293b\' width=\'400\' height=\'400\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' fill=\'%2394a3b8\' font-size=\'16\'%3EConfusion Matrix%3C/text%3E%3Ctext x=\'50%25\' y=\'55%25\' text-anchor=\'middle\' fill=\'%2394a3b8\' font-size=\'12\'%3E(Add confusion_matrix.png to static/images/)%3C/text%3E%3C/svg%3E'">
+                        <p style="color: var(--text-muted); margin-top: 1rem; font-size: 0.9rem;">
+                            Shows model performance across all 5 classes with detailed prediction accuracy.
+                        </p>
+                    </div>
+                    <div class="viz-card">
+                        <h3>Classification Report</h3>
+                        <img src="/static/images/classification_report.png" class="viz-image" alt="Classification Report" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'400\' height=\'400\'%3E%3Crect fill=\'%231e293b\' width=\'400\' height=\'400\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' fill=\'%2394a3b8\' font-size=\'16\'%3EClassification Report%3C/text%3E%3Ctext x=\'50%25\' y=\'55%25\' text-anchor=\'middle\' fill=\'%2394a3b8\' font-size=\'12\'%3E(Add classification_report.png to static/images/)%3C/text%3E%3C/svg%3E'">
+                        <p style="color: var(--text-muted); margin-top: 1rem; font-size: 0.9rem;">
+                            Detailed precision, recall, and F1-score metrics for each class.
+                        </p>
+                    </div>
+                    <div class="viz-card">
+                        <h3>t-SNE Feature Visualization</h3>
+                        <img src="/static/images/tsne_visualization.png" class="viz-image" alt="t-SNE Visualization" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'400\' height=\'400\'%3E%3Crect fill=\'%231e293b\' width=\'400\' height=\'400\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' fill=\'%2394a3b8\' font-size=\'16\'%3Et-SNE Visualization%3C/text%3E%3Ctext x=\'50%25\' y=\'55%25\' text-anchor=\'middle\' fill=\'%2394a3b8\' font-size=\'12\'%3E(Add tsne_visualization.png to static/images/)%3C/text%3E%3C/svg%3E'">
+                        <p style="color: var(--text-muted); margin-top: 1rem; font-size: 0.9rem;">
+                            2D visualization of learned feature representations showing class separability.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Main tab switching
+        function switchMainTab(tabName) {
+            document.querySelectorAll('.main-tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.main-tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName + '-content').classList.add('active');
+        }
+
+        // Sub tab switching
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName + '-content').classList.add('active');
+        }
+
+        // File upload handling - RESTORED FROM ORIGINAL
+        document.getElementById('uploadArea').addEventListener('click', () => {
+            document.getElementById('imageInput').click();
+        });
+
+        document.getElementById('imageInput').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            document.getElementById('loadingIndicator').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                    return;
+                }
+
+                // Hide loading
+                document.getElementById('loadingIndicator').style.display = 'none';
+                document.getElementById('results').style.display = 'block';
+
+                // Update results - RESTORED FROM ORIGINAL
+                document.getElementById('predictedClass').textContent = data.predicted_class;
+                document.getElementById('confidence').textContent = data.confidence_percentage;
+                document.getElementById('confidenceBar').style.width = (data.confidence * 100) + '%';
+                
+                document.getElementById('originalImage').src = data.original_image;
+                
+                if (data.gradcam_overlay) {
+                    document.getElementById('gradcamImage').src = data.gradcam_overlay;
+                }
+                
+                document.getElementById('confidenceChart').src = data.confidence_chart;
+
+                // Update predictions table - RESTORED FROM ORIGINAL
+                const tableBody = document.getElementById('predictionsTable');
+                tableBody.innerHTML = '';
+                data.all_predictions.forEach(pred => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><strong>${pred.class}</strong></td>
+                        <td>
+                            <div class="confidence-bar" style="width: 150px; height: 6px; display: inline-block; margin-right: 10px;">
+                                <div class="confidence-fill" style="width: ${pred.confidence * 100}%"></div>
+                            </div>
+                        </td>
+                        <td>${pred.percentage}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+
+            } catch (error) {
+                alert('Error: ' + error.message);
+                document.getElementById('loadingIndicator').style.display = 'none';
+            }
+        });
+
+        // Batch processing handler
+        document.getElementById('batchFileInput').addEventListener('change', async (e) => {
+            const files = e.target.files;
+            if (!files.length) return;
+
+            const formData = new FormData();
+            for (let file of files) {
+                formData.append('files[]', file);
+            }
+
+            // Show loading
+            document.getElementById('batchLoading').style.display = 'block';
+            document.getElementById('batchResults').innerHTML = '';
+
+            try {
+                const response = await fetch('/batch_predict', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                // Hide loading
+                document.getElementById('batchLoading').style.display = 'none';
+
+                // Display results
+                const resultsContainer = document.getElementById('batchResults');
+                data.results.forEach(result => {
+                    const item = document.createElement('div');
+                    item.className = 'batch-item';
+                    
+                    if (result.error) {
+                        item.innerHTML = `
+                            <h3>${result.filename}</h3>
+                            <div class="error-message">Error: ${result.error}</div>
+                        `;
+                    } else {
+                        const badgeClass = result.confidence > 0.8 ? 'badge-success' : 
+                                          result.confidence > 0.5 ? 'badge-warning' : 'badge-danger';
+                        item.innerHTML = `
+                            <img src="${result.image}" alt="${result.filename}">
+                            <h3 style="margin-bottom: 0.5rem;">${result.filename}</h3>
+                            <div style="margin-bottom: 0.5rem;">
+                                <span class="badge ${badgeClass}">${result.predicted_class}</span>
+                            </div>
+                            <div class="prediction-label">Confidence</div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: var(--accent-cyan);">
+                                ${(result.confidence * 100).toFixed(2)}%
+                            </div>
+                        `;
+                    }
+                    
+                    resultsContainer.appendChild(item);
+                });
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error processing batch: ' + error.message);
+                document.getElementById('batchLoading').style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
