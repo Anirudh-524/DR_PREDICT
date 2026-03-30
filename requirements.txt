@@ -1,6 +1,8 @@
-flask
-gunicorn
+Flask
+Werkzeug
 tensorflow-cpu
-numpy
 opencv-python-headless
+numpy
 Pillow
+matplotlib
+gunicorn==21
