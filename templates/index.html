@@ -652,6 +652,147 @@ footer{
 .bi-conf-val{font-size:0.72rem;font-weight:600;color:var(--ink);font-family:'JetBrains Mono',monospace;min-width:2.8rem;text-align:right;}
 .bi-error{padding:0.6rem 0.75rem;background:var(--red-l);border-radius:8px;font-size:0.78rem;color:var(--red);}
 
+/* PERFORMANCE VISUALIZATIONS SECTION */
+.viz-section{
+  padding:6rem 4rem;
+  background:var(--paper2);
+  border-top:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+}
+
+.viz-section-header{
+  display:flex;flex-direction:column;align-items:center;text-align:center;
+  margin-bottom:4rem;
+}
+
+.viz-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:2rem;
+  max-width:1200px;
+  margin:0 auto;
+}
+
+.viz-card{
+  background:var(--paper);
+  border:1px solid var(--border);
+  border-radius:16px;
+  overflow:hidden;
+  position:relative;
+  transition:all 0.35s;
+  opacity:0;transform:translateY(28px);
+}
+.viz-card.visible{opacity:1;transform:none;}
+.viz-card:hover{
+  border-color:var(--gold);
+  box-shadow:0 12px 32px rgba(184,113,26,0.12);
+  transform:translateY(-5px);
+}
+.viz-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--teal),var(--gold));
+  opacity:0;transition:opacity 0.3s;
+}
+.viz-card:hover::before{opacity:1;}
+
+.viz-img-wrap{
+  width:100%;
+  aspect-ratio:1;
+  background:var(--paper2);
+  overflow:hidden;
+  position:relative;
+  display:flex;align-items:center;justify-content:center;
+}
+
+.viz-img{
+  width:100%;height:100%;
+  object-fit:contain;
+  display:block;
+  padding:0.5rem;
+  transition:transform 0.4s ease;
+}
+.viz-card:hover .viz-img{transform:scale(1.03);}
+
+.viz-placeholder{
+  width:100%;height:100%;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:0.75rem;
+  padding:2rem;
+}
+.viz-placeholder-icon{
+  width:56px;height:56px;border-radius:14px;
+  background:var(--paper3);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;
+}
+.viz-placeholder-text{
+  font-size:0.78rem;color:var(--ink3);
+  text-align:center;line-height:1.5;
+  font-family:'JetBrains Mono',monospace;
+}
+
+.viz-card-body{
+  padding:1.25rem 1.5rem 1.5rem;
+  border-top:1px solid var(--border);
+}
+.viz-card-label{
+  font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;
+  color:var(--gold);margin-bottom:0.35rem;
+}
+.viz-card-title{
+  font-size:1rem;font-weight:700;color:var(--ink);margin-bottom:0.5rem;
+  letter-spacing:-0.01em;
+}
+.viz-card-desc{
+  font-size:0.8rem;color:var(--ink2);line-height:1.65;
+}
+
+.viz-expand-btn{
+  display:inline-flex;align-items:center;gap:5px;
+  margin-top:0.85rem;
+  padding:0.35rem 0.85rem;
+  background:var(--paper2);border:1px solid var(--border);border-radius:100px;
+  font-size:0.72rem;font-weight:600;color:var(--ink3);
+  cursor:pointer;transition:all 0.2s;
+  font-family:'Inter',sans-serif;
+}
+.viz-expand-btn:hover{border-color:var(--gold);color:var(--gold-d);background:var(--gold-l);}
+
+/* LIGHTBOX */
+.viz-lightbox{
+  position:fixed;inset:0;z-index:999;
+  background:rgba(13,13,13,0.85);
+  display:flex;align-items:center;justify-content:center;
+  backdrop-filter:blur(8px);
+  opacity:0;pointer-events:none;
+  transition:opacity 0.3s;
+  padding:2rem;
+}
+.viz-lightbox.open{opacity:1;pointer-events:all;}
+.viz-lightbox-img{
+  max-width:90vw;max-height:88vh;
+  object-fit:contain;border-radius:12px;
+  box-shadow:0 32px 80px rgba(0,0,0,0.6);
+  transform:scale(0.94);transition:transform 0.3s;
+}
+.viz-lightbox.open .viz-lightbox-img{transform:scale(1);}
+.viz-lightbox-close{
+  position:absolute;top:1.5rem;right:1.75rem;
+  background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);
+  color:#fff;border-radius:50%;width:40px;height:40px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;cursor:pointer;transition:background 0.2s;
+}
+.viz-lightbox-close:hover{background:rgba(255,255,255,0.2);}
+.viz-lightbox-caption{
+  position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);
+  background:rgba(13,13,13,0.7);backdrop-filter:blur(8px);
+  border:1px solid rgba(255,255,255,0.1);border-radius:100px;
+  padding:0.5rem 1.25rem;
+  font-size:0.8rem;color:rgba(255,255,255,0.8);white-space:nowrap;
+}
+
 @media(max-width:1024px){
   .hero{grid-template-columns:1fr;padding:5rem 2rem 3rem;}
   .hero-visual{display:none;}
@@ -659,9 +800,10 @@ footer{
   .grades-grid{grid-template-columns:repeat(2,1fr);}
   .model-section{grid-template-columns:1fr;padding:4rem 2rem;}
   .explain-grid{grid-template-columns:1fr;}
+  .viz-grid{grid-template-columns:1fr;}
   nav{padding:0 1.5rem;}
   .stats-bar{padding:2rem 1.5rem;flex-wrap:wrap;}
-  .section,.grades-section,.upload-section,.disclaimer-section{padding:4rem 2rem;}
+  .section,.grades-section,.upload-section,.disclaimer-section,.viz-section{padding:4rem 2rem;}
   footer{flex-direction:column;gap:1rem;text-align:center;padding:2rem;}
   .analysis-chips{display:none;}
 }
@@ -675,6 +817,7 @@ footer{
     <a href="#how">How it works</a>
     <a href="#grades">DR grades</a>
     <a href="#model">Model</a>
+    <a href="#performance">Performance</a>
     <a href="#detect">Detection</a>
   </div>
   <a href="#detect" class="nav-cta">Try detection</a>
@@ -1006,6 +1149,90 @@ footer{
   </div>
 </section>
 
+<!-- PERFORMANCE VISUALIZATIONS -->
+<section class="viz-section" id="performance">
+  <div class="viz-section-header">
+    <div class="section-label">Evaluation</div>
+    <div class="section-title">Performance visualisations</div>
+    <p class="section-desc" style="text-align:center;margin:0 auto;">Model evaluation across three complementary views — prediction accuracy, per-class metrics, and learned feature geometry.</p>
+  </div>
+
+  <div class="viz-grid">
+    <!-- Confusion Matrix -->
+    <div class="viz-card" data-delay="0">
+      <div class="viz-img-wrap">
+        <img
+          class="viz-img"
+          src="/static/images/confusion_matrix.png"
+          alt="Confusion Matrix"
+          onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
+        >
+        <div class="viz-placeholder" style="display:none;">
+          <div class="viz-placeholder-icon">🔢</div>
+          <div class="viz-placeholder-text">confusion_matrix.png<br>Add to static/images/</div>
+        </div>
+      </div>
+      <div class="viz-card-body">
+        <div class="viz-card-label">Confusion Matrix</div>
+        <div class="viz-card-title">Prediction accuracy per class</div>
+        <div class="viz-card-desc">Heat-mapped grid showing true vs. predicted labels across all five DR grades. Diagonal dominance indicates strong per-class accuracy with minimal inter-grade confusion.</div>
+        <button class="viz-expand-btn" onclick="openLightbox('/static/images/confusion_matrix.png','Confusion Matrix')">⤢ Expand</button>
+      </div>
+    </div>
+
+    <!-- t-SNE -->
+    <div class="viz-card" data-delay="150">
+      <div class="viz-img-wrap">
+        <img
+          class="viz-img"
+          src="/static/images/tsne_visualization.png"
+          alt="t-SNE Feature Visualization"
+          onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
+        >
+        <div class="viz-placeholder" style="display:none;">
+          <div class="viz-placeholder-icon">🗺️</div>
+          <div class="viz-placeholder-text">tsne_visualization.png<br>Add to static/images/</div>
+        </div>
+      </div>
+      <div class="viz-card-body">
+        <div class="viz-card-label">t-SNE Projection</div>
+        <div class="viz-card-title">Learned feature space</div>
+        <div class="viz-card-desc">2D dimensionality reduction of the 512-d embedding space. Tight, well-separated clusters per grade confirm that EViT-DR learns discriminative representations across severity levels.</div>
+        <button class="viz-expand-btn" onclick="openLightbox('/static/images/tsne_visualization.png','t-SNE Feature Visualization')">⤢ Expand</button>
+      </div>
+    </div>
+
+    <!-- Classification Report -->
+    <div class="viz-card" data-delay="300">
+      <div class="viz-img-wrap">
+        <img
+          class="viz-img"
+          src="/static/images/classification_report.png"
+          alt="Classification Report"
+          onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
+        >
+        <div class="viz-placeholder" style="display:none;">
+          <div class="viz-placeholder-icon">📋</div>
+          <div class="viz-placeholder-text">classification_report.png<br>Add to static/images/</div>
+        </div>
+      </div>
+      <div class="viz-card-body">
+        <div class="viz-card-label">Classification Report</div>
+        <div class="viz-card-title">Precision · Recall · F1</div>
+        <div class="viz-card-desc">Per-class breakdown of precision, recall and F1-score with macro-averaged summary. Identifies which severity grades are easiest and hardest to distinguish.</div>
+        <button class="viz-expand-btn" onclick="openLightbox('/static/images/classification_report.png','Classification Report')">⤢ Expand</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LIGHTBOX -->
+<div class="viz-lightbox" id="vizLightbox" onclick="closeLightbox(event)">
+  <button class="viz-lightbox-close" onclick="closeLightbox()">✕</button>
+  <img class="viz-lightbox-img" id="vizLightboxImg" src="" alt="">
+  <div class="viz-lightbox-caption" id="vizLightboxCaption"></div>
+</div>
+
 <!-- DISCLAIMER -->
 <div class="disclaimer-section">
   <div class="disclaimer-inner">
@@ -1037,7 +1264,22 @@ const io = new IntersectionObserver((entries)=>{
   });
 },{threshold:0.12});
 
-document.querySelectorAll('.step-card,.grade-card,.explain-card').forEach(el=>io.observe(el));
+document.querySelectorAll('.step-card,.grade-card,.explain-card,.viz-card').forEach(el=>io.observe(el));
+
+/* LIGHTBOX */
+function openLightbox(src, caption){
+  const lb=document.getElementById('vizLightbox');
+  document.getElementById('vizLightboxImg').src=src;
+  document.getElementById('vizLightboxCaption').textContent=caption;
+  lb.classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeLightbox(e){
+  if(e && e.target!==document.getElementById('vizLightbox') && !e.target.classList.contains('viz-lightbox-close')) return;
+  document.getElementById('vizLightbox').classList.remove('open');
+  document.body.style.overflow='';
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape') closeLightbox({target:document.getElementById('vizLightbox')});});
 document.querySelectorAll('#modelVisual,#modelContent').forEach(el=>io.observe(el));
 
 const statsObs = new IntersectionObserver((entries)=>{
@@ -1121,7 +1363,7 @@ document.getElementById('singleInput').addEventListener('change', async(e)=>{
     const res=await fetch('/predict',{method:'POST',body:fd});
     const data=await res.json();
     if(data.error) throw new Error(data.error);
-    const conf=Math.round(data.confidence*100);
+    const conf=(data.confidence*100).toFixed(2);
     document.getElementById('rpGrade').textContent=data.predicted_class;
     document.getElementById('rpConf').textContent=conf+'%';
     document.getElementById('rpConfBar').style.width=conf+'%';
@@ -1214,7 +1456,7 @@ document.getElementById('batchInput').addEventListener('change', async(e)=>{
         card.querySelector('.bi-body').innerHTML+=`<div class="bi-error">${result.error}</div>`;
       } else {
         const grade=result.predicted_class;
-        const conf=Math.round((result.confidence||0)*100);
+        const conf=((result.confidence||0)*100).toFixed(2);
         card.querySelector('.bi-grade').textContent=grade;
         card.querySelector('.bi-grade').style.cssText=badgeStyle(grade);
         card.querySelector('.bi-conf-fill').style.width=conf+'%';
