@@ -793,6 +793,57 @@ footer{
   font-size:0.8rem;color:rgba(255,255,255,0.8);white-space:nowrap;
 }
 
+/* PROBABILITY SECTION */
+.prob-card{
+  background:var(--paper);border:1px solid var(--border);border-radius:16px;
+  overflow:hidden;animation:fadeUp 0.5s forwards;
+}
+.prob-header{
+  padding:1.25rem 1.5rem;background:var(--paper2);border-bottom:1px solid var(--border);
+  display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;
+}
+.prob-title-wrap{}
+.prob-label{font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:var(--gold);margin-bottom:0.2rem;}
+.prob-title{font-size:1rem;font-weight:700;color:var(--ink);letter-spacing:-0.01em;}
+.prob-subtitle{font-size:0.8rem;color:var(--ink3);align-self:flex-end;}
+.prob-body{padding:1.5rem;}
+
+.prob-row{
+  display:grid;grid-template-columns:130px 1fr 52px;
+  align-items:center;gap:1rem;
+  margin-bottom:1.1rem;
+}
+.prob-row:last-child{margin-bottom:0;}
+.prob-row-name{
+  font-size:0.8rem;font-weight:600;color:var(--ink);
+  display:flex;align-items:center;gap:7px;
+}
+.prob-sev-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.prob-track{
+  height:10px;background:var(--paper3);border-radius:100px;overflow:hidden;
+  position:relative;
+}
+.prob-fill{
+  height:100%;border-radius:100px;
+  width:0;transition:width 0.9s cubic-bezier(0.16,1,0.3,1);
+  position:relative;
+}
+.prob-fill.is-top::after{
+  content:'';position:absolute;right:0;top:50%;transform:translateY(-50%);
+  width:12px;height:12px;border-radius:50%;
+  background:inherit;border:2px solid var(--paper);
+  box-shadow:0 0 0 2px currentColor;
+}
+.prob-val{
+  font-size:0.78rem;font-weight:700;color:var(--ink);
+  font-family:'JetBrains Mono',monospace;text-align:right;
+}
+.prob-val.is-top{color:var(--gold-d);}
+
+@media(max-width:600px){
+  .prob-row{grid-template-columns:100px 1fr 44px;}
+}
+
 @media(max-width:1024px){
   .hero{grid-template-columns:1fr;padding:5rem 2rem 3rem;}
   .hero-visual{display:none;}
@@ -1092,20 +1143,27 @@ footer{
             </div>
           </div>
           <!-- Stats row -->
-          <div class="rp-stats">
+          <div class="rp-stats" style="grid-template-columns:1fr;">
             <div class="rp-stat">
               <div class="rp-stat-label">Predicted grade</div>
               <div class="rp-stat-val" id="rpGrade">—</div>
             </div>
-            <div class="rp-stat">
-              <div class="rp-stat-label">Confidence</div>
-              <div class="rp-stat-val" id="rpConf">—</div>
-            </div>
-          </div>
-          <div class="conf-bar-wrap">
-            <div class="conf-bar-fill" id="rpConfBar" style="width:0%"></div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Probability section — shown after API responds -->
+    <div id="probSection" style="display:none;max-width:900px;margin:1.5rem auto 0;">
+      <div class="prob-card">
+        <div class="prob-header">
+          <div class="prob-title-wrap">
+            <div class="prob-label">Analysis</div>
+            <div class="prob-title">Grade probability distribution</div>
+          </div>
+          <div class="prob-subtitle">Softmax output across all five DR severity grades</div>
+        </div>
+        <div class="prob-body" id="probBody"></div>
       </div>
     </div>
   </div>
@@ -1342,19 +1400,59 @@ function badgeStyle(grade){
 }
 
 /* SINGLE IMAGE */
+const gradeBarColors={
+  'No DR':     {fill:'#3a7a52',dot:'#3a7a52'},
+  'Mild':      {fill:'#c4a020',dot:'#c4a020'},
+  'Moderate':  {fill:'#c47010',dot:'#c47010'},
+  'Severe':    {fill:'#b84040',dot:'#b84040'},
+  'Proliferative DR':{fill:'#7a1a1a',dot:'#7a1a1a'}
+};
+
+function renderProbChart(predictions){
+  const body=document.getElementById('probBody');
+  body.innerHTML='';
+  const maxConf=Math.max(...predictions.map(p=>p.confidence));
+  predictions.forEach(pred=>{
+    const pct=(pred.confidence*100).toFixed(1);
+    const isTop=pred.confidence===maxConf;
+    const colors=gradeBarColors[pred.class]||{fill:'#888780',dot:'#888780'};
+    const row=document.createElement('div');
+    row.className='prob-row';
+    row.innerHTML=`
+      <div class="prob-row-name">
+        <span class="prob-sev-dot" style="background:${colors.dot}"></span>
+        ${pred.class}
+      </div>
+      <div class="prob-track">
+        <div class="prob-fill${isTop?' is-top':''}" data-w="${pct}" style="background:${colors.fill};"></div>
+      </div>
+      <div class="prob-val${isTop?' is-top':''}">${pct}%</div>`;
+    body.appendChild(row);
+  });
+  /* Trigger bar animations after paint */
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      body.querySelectorAll('.prob-fill').forEach(el=>{
+        el.style.width=el.dataset.w+'%';
+      });
+    });
+  });
+}
+
 document.getElementById('singleInput').addEventListener('change', async(e)=>{
   const file=e.target.files[0]; if(!file) return;
   const url=URL.createObjectURL(file);
 
+  /* Show images immediately, hide prob section */
   document.getElementById('rpOriginal').src=url;
   document.getElementById('rpGradcam').src='';
   document.getElementById('gradcamLoading').classList.remove('hidden');
   document.getElementById('rpFilename').textContent=file.name;
   document.getElementById('rpGrade').textContent='Analysing…';
-  document.getElementById('rpConf').textContent='—';
-  document.getElementById('rpConfBar').style.width='0%';
   document.getElementById('rpBadge').textContent='';
   document.getElementById('singleResult').style.display='block';
+  document.getElementById('probSection').style.display='none';
+  document.getElementById('probBody').innerHTML='';
   document.getElementById('singleIcon').textContent='⏳';
   document.getElementById('singleHeading').textContent='Analysing…';
 
@@ -1363,20 +1461,29 @@ document.getElementById('singleInput').addEventListener('change', async(e)=>{
     const res=await fetch('/predict',{method:'POST',body:fd});
     const data=await res.json();
     if(data.error) throw new Error(data.error);
-    const conf=(data.confidence*100).toFixed(2);
+
+    /* Update grade */
     document.getElementById('rpGrade').textContent=data.predicted_class;
-    document.getElementById('rpConf').textContent=conf+'%';
-    document.getElementById('rpConfBar').style.width=conf+'%';
     const b=document.getElementById('rpBadge');
     b.textContent=data.predicted_class;
     b.style.cssText=badgeStyle(data.predicted_class);
+
+    /* Update Grad-CAM */
     if(data.gradcam_overlay){
       document.getElementById('rpGradcam').src=data.gradcam_overlay;
       document.getElementById('gradcamLoading').classList.add('hidden');
     }
+
+    /* Show probability chart after a short delay so it feels separate */
+    if(data.all_predictions && data.all_predictions.length){
+      setTimeout(()=>{
+        document.getElementById('probSection').style.display='block';
+        renderProbChart(data.all_predictions);
+      }, 400);
+    }
+
   }catch(err){
-    document.getElementById('rpGrade').textContent='Error';
-    document.getElementById('rpConf').textContent=err.message;
+    document.getElementById('rpGrade').textContent='Error: '+err.message;
     document.getElementById('gradcamLoading').textContent='Grad-CAM unavailable';
   }
   document.getElementById('singleIcon').textContent='📷';
@@ -1430,10 +1537,6 @@ document.getElementById('batchInput').addEventListener('change', async(e)=>{
       <div class="bi-body">
         <div class="bi-name" title="${file.name}">${file.name}</div>
         <div class="bi-grade" style="background:var(--paper2);color:var(--ink3);">Queued…</div>
-        <div class="bi-conf-row">
-          <div class="bi-conf-track"><div class="bi-conf-fill" style="width:0%"></div></div>
-          <div class="bi-conf-val">—</div>
-        </div>
       </div>`;
     document.getElementById('batchResults').appendChild(card);
     cards.push(card);
@@ -1456,11 +1559,8 @@ document.getElementById('batchInput').addEventListener('change', async(e)=>{
         card.querySelector('.bi-body').innerHTML+=`<div class="bi-error">${result.error}</div>`;
       } else {
         const grade=result.predicted_class;
-        const conf=((result.confidence||0)*100).toFixed(2);
         card.querySelector('.bi-grade').textContent=grade;
         card.querySelector('.bi-grade').style.cssText=badgeStyle(grade);
-        card.querySelector('.bi-conf-fill').style.width=conf+'%';
-        card.querySelector('.bi-conf-val').textContent=conf+'%';
         if(result.image) card.querySelector('.bi-thumb').src=result.image;
         if(grade==='No DR') counts.noDR++;
         else if(grade==='Mild') counts.mild++;
